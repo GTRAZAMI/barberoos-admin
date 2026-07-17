@@ -4,11 +4,14 @@ import {
   ChevronRight,
   CreditCard,
   LayoutDashboard,
+  Lock,
+  LogOut,
   Menu,
   Save,
   Scissors,
   Settings,
   ShoppingBag,
+  User,
   Users,
   X,
 } from "lucide-react";
@@ -39,6 +42,7 @@ const sections: NavSection[] = [
 export default function App() {
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem("barberoos-admin-auth") === "true");
   const location = useLocation();
   const activeSection = sections.find((section) => location.pathname === section.path)?.name ?? "Dashboard";
   const currentDate = useMemo(
@@ -62,6 +66,37 @@ export default function App() {
   function saveChanges(event?: FormEvent) {
     event?.preventDefault();
     toast.success("Saved", { description: "The admin changes are ready to sync with the backend." });
+  }
+
+  function login(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const username = String(form.get("username") || "").trim();
+    const password = String(form.get("password") || "").trim();
+
+    if (username !== "admin" || password !== "admin") {
+      toast.error("Wrong login", { description: "Use admin for username and password." });
+      return;
+    }
+
+    localStorage.setItem("barberoos-admin-auth", "true");
+    setIsAuthenticated(true);
+    toast.success("Welcome back", { description: "Dashboard is ready." });
+  }
+
+  function logout() {
+    localStorage.removeItem("barberoos-admin-auth");
+    setIsAuthenticated(false);
+    toast.success("Logged out");
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage onLogin={login} />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
   }
 
   return (
@@ -123,6 +158,9 @@ export default function App() {
               <button type="button" onClick={() => saveChanges()} className="inline-flex items-center gap-2 rounded bg-[#f8f1e7] px-4 py-2 font-black text-[#11100e] transition duration-300 hover:bg-[#d6aa63]">
                 <Save size={17} /> Save
               </button>
+              <button type="button" onClick={logout} className="grid size-10 place-items-center rounded border border-white/15 text-[#d8cec0] transition hover:border-[#d6aa63] hover:text-[#d6aa63]" aria-label="Logout">
+                <LogOut size={18} />
+              </button>
             </div>
           </div>
         </header>
@@ -137,6 +175,7 @@ export default function App() {
           <div className="animate-soft-in">
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/login" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/services" element={<Services />} />
               <Route path="/barbers" element={<Barbers />} />
@@ -150,5 +189,49 @@ export default function App() {
         </main>
       </div>
     </div>
+  );
+}
+
+function LoginPage({ onLogin }: { onLogin: (event: FormEvent<HTMLFormElement>) => void }) {
+  return (
+    <main className="grid min-h-screen place-items-center bg-[#100f0d] px-5 py-10 text-[#f8f1e7]">
+      <section className="relative w-full max-w-md overflow-hidden rounded border border-white/10 bg-[#17130f] p-6 shadow-2xl shadow-black/40 animate-soft-in">
+        <div className="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top,rgba(214,170,99,.28),transparent_65%)]" />
+        <div className="relative">
+          <div className="flex items-center gap-3">
+            <span className="grid size-12 place-items-center rounded bg-[#d6aa63] text-[#11100e] shadow-[0_18px_50px_rgba(214,170,99,.28)]">
+              <Scissors size={23} />
+            </span>
+            <div>
+              <strong className="block text-xl tracking-[0.18em]">BARBEROOS</strong>
+              <small className="text-[#cabbab]">Admin login</small>
+            </div>
+          </div>
+
+          <h1 className="mt-9 text-4xl font-black leading-tight">Welcome to the control chair.</h1>
+          <p className="mt-3 text-sm leading-6 text-[#cabbab]">Sign in to manage services, products, bookings, offers, and homepage content.</p>
+
+          <form onSubmit={onLogin} className="mt-7 grid gap-4">
+            <label className="grid gap-2">
+              <span className="text-xs font-black uppercase tracking-[0.18em] text-[#d6aa63]">Username</span>
+              <span className="flex items-center gap-3 rounded border border-white/10 bg-black/25 px-4 py-3 transition focus-within:border-[#d6aa63]">
+                <User size={18} className="text-[#d6aa63]" />
+                <input name="username" defaultValue="admin" className="min-w-0 flex-1 bg-transparent outline-none" autoComplete="username" />
+              </span>
+            </label>
+            <label className="grid gap-2">
+              <span className="text-xs font-black uppercase tracking-[0.18em] text-[#d6aa63]">Password</span>
+              <span className="flex items-center gap-3 rounded border border-white/10 bg-black/25 px-4 py-3 transition focus-within:border-[#d6aa63]">
+                <Lock size={18} className="text-[#d6aa63]" />
+                <input name="password" defaultValue="admin" type="password" className="min-w-0 flex-1 bg-transparent outline-none" autoComplete="current-password" />
+              </span>
+            </label>
+            <button className="mt-2 inline-flex items-center justify-center gap-2 rounded bg-[#d6aa63] px-5 py-3 font-black text-[#11100e] transition duration-300 hover:bg-[#f8f1e7]">
+              Enter admin panel <ChevronRight size={18} />
+            </button>
+          </form>
+        </div>
+      </section>
+    </main>
   );
 }

@@ -1,8 +1,8 @@
-import { BarChart3, CalendarClock, Clock, Flame, Pencil, Plus, ShoppingBag, Star, Tag, Trash2 } from "lucide-react";
+import { BarChart3, CalendarClock, Check, Clock, Flame, Pencil, Plus, Scissors, Shuffle, ShoppingBag, Star, Tag, Trash2 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { bookings, productRows } from "../data/mock";
+import { bookings, productRows, serviceRows } from "../data/mock";
 import { AdminInput, DataTable, Modal, Panel, StatCard } from "../components/ui";
 
 type FlashOffer = {
@@ -35,9 +35,31 @@ export function Dashboard() {
   const [offerPricePreview, setOfferPricePreview] = useState("15");
   const [offerModal, setOfferModal] = useState<FlashOffer | "new" | null>(null);
   const [deleteOffer, setDeleteOffer] = useState<FlashOffer | null>(null);
+  const [autoServices, setAutoServices] = useState(false);
+  const [homepageServiceIds, setHomepageServiceIds] = useState<number[]>([1, 4, 5, 6]);
+  const [servicePickerOpen, setServicePickerOpen] = useState(false);
+  const [autoProducts, setAutoProducts] = useState(false);
+  const [homepageProductIds, setHomepageProductIds] = useState<number[]>([1, 2, 3]);
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
   const selectedProduct = useMemo(() => productRows.find((product) => product.id === selectedProductId) ?? productRows[0], [selectedProductId]);
   const formattedOfferPrice = useMemo(() => formatPrice(offerPricePreview), [offerPricePreview]);
   const savings = useMemo(() => getSavings(selectedProduct?.price ?? "$0", formattedOfferPrice), [selectedProduct, formattedOfferPrice]);
+  const activeServices = useMemo(() => serviceRows.filter((service) => service.status === "Active"), []);
+  const publishedProducts = useMemo(() => productRows.filter((product) => product.status === "Published"), []);
+  const selectedHomepageServices = useMemo(() => {
+    if (autoServices) return getMixedServices(activeServices);
+
+    return homepageServiceIds
+      .map((serviceId) => activeServices.find((service) => service.id === serviceId))
+      .filter((service): service is (typeof activeServices)[number] => Boolean(service));
+  }, [activeServices, autoServices, homepageServiceIds]);
+  const selectedHomepageProducts = useMemo(() => {
+    if (autoProducts) return getMixedProducts(publishedProducts);
+
+    return homepageProductIds
+      .map((productId) => publishedProducts.find((product) => product.id === productId))
+      .filter((product): product is (typeof publishedProducts)[number] => Boolean(product));
+  }, [autoProducts, homepageProductIds, publishedProducts]);
 
   function openOfferModal(offer: FlashOffer | "new") {
     if (offer === "new") {
@@ -119,6 +141,34 @@ export function Dashboard() {
     setDeleteOffer(null);
   }
 
+  function toggleHomepageService(serviceId: number) {
+    if (autoServices) return;
+
+    setHomepageServiceIds((current) => {
+      if (current.includes(serviceId)) return current.filter((id) => id !== serviceId);
+      if (current.length >= 4) {
+        toast.warning("Only four services", { description: "Remove one selected service before adding another." });
+        return current;
+      }
+
+      return [...current, serviceId];
+    });
+  }
+
+  function toggleHomepageProduct(productId: number) {
+    if (autoProducts) return;
+
+    setHomepageProductIds((current) => {
+      if (current.includes(productId)) return current.filter((id) => id !== productId);
+      if (current.length >= 3) {
+        toast.warning("Only three products", { description: "Remove one selected product before adding another." });
+        return current;
+      }
+
+      return [...current, productId];
+    });
+  }
+
   const offerFormDefaults =
     offerModal && offerModal !== "new"
       ? offerModal
@@ -152,20 +202,9 @@ export function Dashboard() {
         <StatCard icon={<BarChart3 />} label="Revenue" value="$1,240" trend="+16% this week" />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-        <Panel title="Live booking queue" action="View calendar">
-          <DataTable rows={bookings} columns={["client", "service", "barber", "time", "status"]} />
-        </Panel>
-        <Panel title="Quick actions">
-          <div className="grid gap-3">
-            {["Add service", "Upload gallery image", "Create product", "Edit delivery text"].map((item) => (
-              <button key={item} type="button" onClick={() => toast.info(item, { description: "This action will connect to backend later." })} className="flex items-center justify-between rounded border border-white/10 bg-white/[.05] px-4 py-3 font-bold transition hover:border-[#d6aa63] hover:text-[#d6aa63]">
-                {item} <Plus size={18} />
-              </button>
-            ))}
-          </div>
-        </Panel>
-      </div>
+      <Panel title="Live booking queue" action="View calendar">
+        <DataTable rows={bookings} columns={["client", "service", "barber", "time", "status"]} />
+      </Panel>
 
       <Panel title="Flash product offers">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -209,6 +248,188 @@ export function Dashboard() {
             ))}
           </div>
       </Panel>
+
+      <Panel title="Homepage services">
+        <div className="grid gap-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm leading-6 text-[#cabbab]">Choose the four services shown in the homepage popular services block, or let the website mix four active services from all categories.</p>
+              <p className="mt-2 text-xs font-black uppercase tracking-[0.18em] text-[#d6aa63]">{autoServices ? "Automatic mixed mode" : `${homepageServiceIds.length}/4 selected`}</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button type="button" onClick={() => setServicePickerOpen(true)} disabled={autoServices} className="inline-flex items-center gap-2 rounded bg-[#d6aa63] px-5 py-3 font-black text-[#11100e] transition hover:bg-[#f8f1e7] disabled:cursor-not-allowed disabled:opacity-45">
+                <Scissors size={18} /> Choose services
+              </button>
+              <label className="flex cursor-pointer items-center gap-3 rounded border border-white/10 bg-black/25 px-4 py-3 transition hover:border-[#d6aa63]">
+                <input type="checkbox" checked={autoServices} onChange={(event) => setAutoServices(event.target.checked)} className="sr-only" />
+                <span className={`relative h-6 w-11 rounded-full transition ${autoServices ? "bg-[#d6aa63]" : "bg-white/15"}`}>
+                  <span className={`absolute top-1 size-4 rounded-full bg-[#11100e] transition ${autoServices ? "left-6" : "left-1"}`} />
+                </span>
+                <span className="inline-flex items-center gap-2 font-black">
+                  <Shuffle size={17} /> Show random 4
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {selectedHomepageServices.map((service) => (
+              <article key={service.id} className="rounded border border-[#d6aa63]/25 bg-[#d6aa63]/10 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="grid size-10 place-items-center rounded bg-[#d6aa63] text-[#11100e]">
+                    <Scissors size={18} />
+                  </span>
+                  <span className="rounded bg-emerald-400/15 px-2 py-1 text-xs font-bold text-emerald-200">Home</span>
+                </div>
+                <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-[#d6aa63]">{service.category}</p>
+                <h3 className="mt-2 text-xl font-black">{service.name}</h3>
+                <div className="mt-5 flex items-end justify-between border-t border-white/10 pt-4 text-sm text-[#d8cec0]">
+                  <span>{service.duration}</span>
+                  <strong className="text-2xl text-[#d6aa63]">{service.price}</strong>
+                </div>
+              </article>
+            ))}
+          </div>
+
+        </div>
+      </Panel>
+
+      <Panel title="Homepage products">
+        <div className="grid gap-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm leading-6 text-[#cabbab]">Choose the three products shown in the homepage store section, or let the website rotate three published products from different categories.</p>
+              <p className="mt-2 text-xs font-black uppercase tracking-[0.18em] text-[#d6aa63]">{autoProducts ? "Automatic product rotation" : `${homepageProductIds.length}/3 selected`}</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button type="button" onClick={() => setProductPickerOpen(true)} disabled={autoProducts} className="inline-flex items-center gap-2 rounded bg-[#d6aa63] px-5 py-3 font-black text-[#11100e] transition hover:bg-[#f8f1e7] disabled:cursor-not-allowed disabled:opacity-45">
+                <ShoppingBag size={18} /> Choose products
+              </button>
+              <label className="flex cursor-pointer items-center gap-3 rounded border border-white/10 bg-black/25 px-4 py-3 transition hover:border-[#d6aa63]">
+                <input type="checkbox" checked={autoProducts} onChange={(event) => setAutoProducts(event.target.checked)} className="sr-only" />
+                <span className={`relative h-6 w-11 rounded-full transition ${autoProducts ? "bg-[#d6aa63]" : "bg-white/15"}`}>
+                  <span className={`absolute top-1 size-4 rounded-full bg-[#11100e] transition ${autoProducts ? "left-6" : "left-1"}`} />
+                </span>
+                <span className="inline-flex items-center gap-2 font-black">
+                  <Shuffle size={17} /> Show random 3
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            {selectedHomepageProducts.map((product) => (
+              <article key={product.id} className="overflow-hidden rounded border border-white/10 bg-black/20 transition duration-300 hover:border-[#d6aa63]">
+                <div className="grid aspect-[4/3] place-items-center bg-[linear-gradient(135deg,#efe4d1,#c3944f)] text-[#11100e]">
+                  <ShoppingBag size={44} strokeWidth={2.4} />
+                </div>
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#d6aa63]">{product.category}</p>
+                      <h3 className="mt-2 text-xl font-black">{product.name}</h3>
+                    </div>
+                    <span className="rounded bg-emerald-400/15 px-2 py-1 text-xs font-bold text-emerald-200">Home</span>
+                  </div>
+                  <div className="mt-5 flex items-end justify-between border-t border-white/10 pt-4">
+                    <span className="text-sm text-[#cabbab]">{product.stock} in stock</span>
+                    <strong className="text-2xl text-[#f8f1e7]">{product.price}</strong>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </Panel>
+
+      {servicePickerOpen && (
+        <Modal title="Choose homepage services" onClose={() => setServicePickerOpen(false)} size="lg">
+          <div className="grid gap-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-white/10 bg-black/20 p-4">
+              <div>
+                <p className="font-black">{homepageServiceIds.length}/4 services selected</p>
+                <p className="mt-1 text-sm text-[#cabbab]">Pick exactly the services that will appear in the homepage popular services section.</p>
+              </div>
+              <button type="button" onClick={() => setServicePickerOpen(false)} className="inline-flex items-center gap-2 rounded bg-[#d6aa63] px-5 py-3 font-black text-[#11100e] transition hover:bg-[#f8f1e7]">
+                <Check size={18} /> Done
+              </button>
+            </div>
+
+            <div className="grid max-h-[55vh] gap-3 overflow-y-auto pr-1 md:grid-cols-2">
+              {activeServices.map((service) => {
+                const selected = homepageServiceIds.includes(service.id);
+                const disabled = !selected && homepageServiceIds.length >= 4;
+
+                return (
+                  <button
+                    key={service.id}
+                    type="button"
+                    onClick={() => toggleHomepageService(service.id)}
+                    disabled={disabled}
+                    className={`flex min-h-24 items-center justify-between gap-3 rounded border p-4 text-left transition duration-300 ${selected ? "border-[#d6aa63] bg-[#d6aa63]/10" : "border-white/10 bg-black/20 hover:border-[#d6aa63]"} ${disabled ? "cursor-not-allowed opacity-45" : ""}`}
+                  >
+                    <span>
+                      <span className="block text-xs font-black uppercase tracking-[0.16em] text-[#d6aa63]">{service.category}</span>
+                      <span className="mt-2 block font-black">{service.name}</span>
+                      <span className="mt-1 block text-sm text-[#cabbab]">{service.duration} - {service.price}</span>
+                    </span>
+                    <span className={`grid size-8 shrink-0 place-items-center rounded ${selected ? "bg-[#d6aa63] text-[#11100e]" : "bg-white/10 text-[#cabbab]"}`}>
+                      {selected ? <Check size={16} /> : <Plus size={16} />}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {productPickerOpen && (
+        <Modal title="Choose homepage products" onClose={() => setProductPickerOpen(false)} size="lg">
+          <div className="grid gap-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-white/10 bg-black/20 p-4">
+              <div>
+                <p className="font-black">{homepageProductIds.length}/3 products selected</p>
+                <p className="mt-1 text-sm text-[#cabbab]">Pick the products that appear in the homepage store preview.</p>
+              </div>
+              <button type="button" onClick={() => setProductPickerOpen(false)} className="inline-flex items-center gap-2 rounded bg-[#d6aa63] px-5 py-3 font-black text-[#11100e] transition hover:bg-[#f8f1e7]">
+                <Check size={18} /> Done
+              </button>
+            </div>
+
+            <div className="grid max-h-[55vh] gap-3 overflow-y-auto pr-1 md:grid-cols-2">
+              {publishedProducts.map((product) => {
+                const selected = homepageProductIds.includes(product.id);
+                const disabled = !selected && homepageProductIds.length >= 3;
+
+                return (
+                  <button
+                    key={product.id}
+                    type="button"
+                    onClick={() => toggleHomepageProduct(product.id)}
+                    disabled={disabled}
+                    className={`flex min-h-24 items-center justify-between gap-3 rounded border p-4 text-left transition duration-300 ${selected ? "border-[#d6aa63] bg-[#d6aa63]/10" : "border-white/10 bg-black/20 hover:border-[#d6aa63]"} ${disabled ? "cursor-not-allowed opacity-45" : ""}`}
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className="grid size-12 shrink-0 place-items-center rounded bg-[#d6aa63]/15 text-[#d6aa63]">
+                        <ShoppingBag size={20} />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-xs font-black uppercase tracking-[0.16em] text-[#d6aa63]">{product.category}</span>
+                        <span className="mt-2 block truncate font-black">{product.name}</span>
+                        <span className="mt-1 block text-sm text-[#cabbab]">{product.stock} stock - {product.price}</span>
+                      </span>
+                    </span>
+                    <span className={`grid size-8 shrink-0 place-items-center rounded ${selected ? "bg-[#d6aa63] text-[#11100e]" : "bg-white/10 text-[#cabbab]"}`}>
+                      {selected ? <Check size={16} /> : <Plus size={16} />}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {offerModal && (
         <Modal title={offerModal === "new" ? "Add flash offer" : "Edit flash offer"} onClose={() => setOfferModal(null)} size="lg">
@@ -313,4 +534,28 @@ function formatPrice(price: string) {
 function getSavings(oldPrice: string, offerPrice: string) {
   const savings = getNumericPrice(oldPrice) - getNumericPrice(offerPrice);
   return savings > 0 ? `$${savings.toFixed(2)}` : "";
+}
+
+function getMixedServices(services: typeof serviceRows) {
+  const byCategory = services.reduce<Record<string, typeof serviceRows>>((groups, service) => {
+    groups[service.category] = [...(groups[service.category] ?? []), service];
+    return groups;
+  }, {});
+
+  const mixed = Object.values(byCategory).flatMap((categoryServices) => categoryServices.slice(0, 1));
+  const remaining = services.filter((service) => !mixed.some((selected) => selected.id === service.id));
+
+  return [...mixed, ...remaining].slice(0, 4);
+}
+
+function getMixedProducts(products: typeof productRows) {
+  const byCategory = products.reduce<Record<string, typeof productRows>>((groups, product) => {
+    groups[product.category] = [...(groups[product.category] ?? []), product];
+    return groups;
+  }, {});
+
+  const mixed = Object.values(byCategory).flatMap((categoryProducts) => categoryProducts.slice(0, 1));
+  const remaining = products.filter((product) => !mixed.some((selected) => selected.id === product.id));
+
+  return [...mixed, ...remaining].slice(0, 3);
 }

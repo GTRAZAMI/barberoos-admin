@@ -10,6 +10,11 @@ export const serviceRows: ServiceRow[] = [
   { id: 1, name: "Signature Fade", category: "Haircuts", duration: "45 min", price: "$28", status: "Active" },
   { id: 2, name: "Beard Ritual", category: "Beard", duration: "30 min", price: "$18", status: "Active" },
   { id: 3, name: "Groom & Facial", category: "Packages", duration: "85 min", price: "$58", status: "Draft" },
+  { id: 4, name: "Classic Cut", category: "Haircuts", duration: "35 min", price: "$22", status: "Active" },
+  { id: 5, name: "Scissor Cut", category: "Haircuts", duration: "50 min", price: "$32", status: "Active" },
+  { id: 6, name: "Buzz Cut", category: "Haircuts", duration: "25 min", price: "$16", status: "Active" },
+  { id: 7, name: "Royal Shave", category: "Beard", duration: "35 min", price: "$24", status: "Active" },
+  { id: 8, name: "Father & Son", category: "Packages", duration: "70 min", price: "$44", status: "Active" },
 ];
 
 export const barbers = [
@@ -27,7 +32,13 @@ export const productCategories: CategoryRow[] = [
 export const productRows: ProductRow[] = [
   { id: 1, name: "Matte Clay", category: "Styling", stock: 24, price: "$19", status: "Published" },
   { id: 2, name: "Beard Oil", category: "Beard Care", stock: 18, price: "$16", status: "Published" },
-  { id: 3, name: "Daily Shampoo", category: "Hair Care", stock: 32, price: "$14", status: "Draft" },
+  { id: 3, name: "Daily Shampoo", category: "Hair Care", stock: 32, price: "$14", status: "Published" },
+  { id: 4, name: "Texture Powder", category: "Styling", stock: 15, price: "$17", status: "Published" },
+  { id: 5, name: "Sea Salt Spray", category: "Styling", stock: 20, price: "$15", status: "Published" },
+  { id: 6, name: "Beard Balm", category: "Beard Care", stock: 12, price: "$18", status: "Published" },
+  { id: 7, name: "Aftershave Balm", category: "Skin Care", stock: 26, price: "$13", status: "Published" },
+  { id: 8, name: "Comb Set", category: "Tools", stock: 40, price: "$11", status: "Published" },
+  { id: 9, name: "Grooming Kit", category: "Bundles", stock: 9, price: "$39", status: "Draft" },
 ];
 
 export const bookings = [

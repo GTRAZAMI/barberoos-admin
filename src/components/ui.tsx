@@ -1,6 +1,7 @@
 import { Check, ChevronRight, Image as ImageIcon, Scissors, Sparkles, Trash2, X } from "lucide-react";
 import type { ChangeEvent, ReactNode } from "react";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
 export function PageLoader() {
@@ -49,10 +50,10 @@ export function Panel({ title, action, children }: { title: string; action?: str
 }
 
 export function Modal({ title, children, onClose, size = "md" }: { title: string; children: ReactNode; onClose: () => void; size?: "md" | "lg" }) {
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm">
-      <section className={`w-full rounded border border-white/10 bg-[#17130f] p-5 shadow-2xl shadow-black/50 animate-soft-in ${size === "lg" ? "max-w-3xl" : "max-w-xl"}`}>
-        <div className="mb-5 flex items-center justify-between gap-3">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] grid h-dvh place-items-center overflow-hidden bg-[#050403]/75 p-4 backdrop-blur-md backdrop-saturate-50">
+      <section className={`max-h-[calc(100dvh-2rem)] w-full overflow-y-auto overscroll-contain rounded border border-white/10 bg-[#17130f] p-5 shadow-2xl shadow-black/50 animate-soft-in ${size === "lg" ? "max-w-3xl" : "max-w-xl"}`}>
+        <div className="sticky -top-5 z-10 -mx-5 mb-5 flex items-center justify-between gap-3 border-b border-white/10 bg-[#17130f] px-5 py-4">
           <h2 className="text-2xl font-black">{title}</h2>
           <button type="button" onClick={onClose} className="grid size-10 place-items-center rounded border border-white/15 text-[#cabbab] transition hover:border-[#d6aa63] hover:text-[#d6aa63]" aria-label="Close modal">
             <X size={18} />
@@ -60,7 +61,8 @@ export function Modal({ title, children, onClose, size = "md" }: { title: string
         </div>
         {children}
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
